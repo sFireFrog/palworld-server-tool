@@ -37,3 +37,4 @@ dist
 structure.json
 
 .pnpm-store
+cmd/pst-agent/config.yml
