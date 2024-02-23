@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -124,8 +125,8 @@ func useOssDownload(src string) (string, error) {
 	if err != nil {
 		return "", errors.New("init oss client error: " + err.Error())
 	}
-	tmpFile, err := os.CreateTemp("", "Level.sav")
-	destPath := tmpFile.Name()
+
+	destPath := filepath.Join(os.TempDir(), filepath.Base(src))
 	getStatus := component.GetFileFromOss(src, destPath, bucketName, "", client)
 	if !getStatus {
 		return "", errors.New("get file error: " + err.Error())
