@@ -3,12 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"time"
 
@@ -16,12 +13,17 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
+	"github.com/zaigie/palworld-server-tool/cmd/pst-agent/fileUtils"
 )
 
 var (
 	port int
 	file string
 )
+
+type fileResponse struct {
+	Path string `json:"path"`
+}
 
 func main() {
 	flag.IntVar(&port, "port", 8081, "port")
@@ -42,7 +44,7 @@ func main() {
 		os.MkdirAll(cacheDir, os.ModePerm)
 
 		destFile := filepath.Join(cacheDir, "Level.sav")
-		copyStatus := copyFile(viper.GetString("sav_file"), destFile)
+		copyStatus := fileUtils.CopyFile(viper.GetString("sav_file"), destFile)
 		if !copyStatus {
 			c.Redirect(http.StatusFound, "/404")
 			return
@@ -51,13 +53,32 @@ func main() {
 		c.File(destFile)
 	})
 
+	r.GET("/sync/v2", func(c *gin.Context) {
+		uuid := uuid.New().String()
+		cacheDir := filepath.Join(os.TempDir(), "pst", uuid)
+		os.MkdirAll(cacheDir, os.ModePerm)
+
+		destFile := filepath.Join(cacheDir, uuid)
+		copyStatus := fileUtils.CopyFile(viper.GetString("sav_file"), destFile)
+		if !copyStatus {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "not get"})
+			return
+		}
+		path := fileUtils.UploadFileToOss(destFile)
+		if path == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "upload error"})
+			return
+		}
+		c.JSON(http.StatusOK, fileResponse{Path: path})
+	})
+
 	s, err := gocron.NewScheduler()
 	if err != nil {
 		fmt.Println(err)
 	}
 	_, err = s.NewJob(
 		gocron.DurationJob(60*time.Second),
-		gocron.NewTask(limitCacheFiles, filepath.Join(os.TempDir(), "pst"), 5),
+		gocron.NewTask(fileUtils.LimitCacheFiles, filepath.Join(os.TempDir(), "pst"), 5),
 	)
 	if err != nil {
 		fmt.Println(err)
@@ -67,55 +88,4 @@ func main() {
 	fmt.Println("pst-agent is running, Listening on port", port)
 
 	r.Run(":" + strconv.Itoa(port))
-}
-
-func copyFile(src, dst string) bool {
-	source, err := os.Open(src)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	defer source.Close()
-
-	destination, err := os.Create(dst)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-	return true
-}
-
-// limitCacheFiles keeps only the latest `n` files in the cache directory
-func limitCacheFiles(cacheDir string, n int) {
-	files, err := os.ReadDir(cacheDir)
-	if err != nil {
-		log.Println("Error reading cache directory:", err)
-		return
-	}
-
-	if len(files) <= n {
-		return
-	}
-
-	sort.Slice(files, func(i, j int) bool {
-		infoI, _ := files[i].Info()
-		infoJ, _ := files[j].Info()
-		return infoI.ModTime().After(infoJ.ModTime())
-	})
-
-	// Delete files that exceed the limit
-	for i := n; i < len(files); i++ {
-		path := filepath.Join(cacheDir, files[i].Name())
-		err = os.RemoveAll(path)
-		if err != nil {
-			fmt.Println("delete files path", path, err)
-		}
-	}
 }

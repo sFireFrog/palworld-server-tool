@@ -63,7 +63,23 @@ func LimitCacheFiles(cacheDir string, n int) {
 	}
 }
 
-func UploadFileToOss(src string) {
+func UploadFileToOss(src string) string {
+	info := config.ConfigInfo{}
+	config, getConfStatus := info.GetConf()
+	if !getConfStatus {
+		fmt.Println("not config")
+		return ""
+	}
+	client, err := service.NewOssClient(config.Endpoint, config.AccessKeyID, config.AccessKeySecret)
+	if err != nil {
+		fmt.Println("NewOssClient error")
+		return ""
+	}
+	path := service.UploadFileToOss(src, config.BucketName, config.Prefix, client)
+	return path
+}
+
+func GetFileFromOss(src, dest string) {
 	info := config.ConfigInfo{}
 	config, getConfStatus := info.GetConf()
 	if !getConfStatus {
@@ -75,5 +91,5 @@ func UploadFileToOss(src string) {
 		fmt.Println("NewOssClient error")
 		return
 	}
-	service.UploadFileToOss(src, config.BucketName, config.Prefix, client)
+	service.GetFileFromOss(src, dest, config.BucketName, config.Prefix, client)
 }

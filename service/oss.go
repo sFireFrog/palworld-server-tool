@@ -16,12 +16,12 @@ func NewOssClient(endpoint string, accessKeyID string, accessKeySecret string) (
 	return client, err
 }
 
-func UploadFileToOss(src string, bucketName string, prefix string, client *oss.Client) {
+func UploadFileToOss(src string, bucketName string, prefix string, client *oss.Client) string {
 
 	bucket, err := client.Bucket(bucketName)
 	if err != nil {
 		fmt.Println("Bucket Error:", err)
-		return
+		return ""
 	}
 
 	objectKey := filepath.ToSlash(filepath.Join(prefix, filepath.Base(src)))
@@ -29,6 +29,25 @@ func UploadFileToOss(src string, bucketName string, prefix string, client *oss.C
 	err = bucket.PutObjectFromFile(objectKey, src)
 	if err != nil {
 		fmt.Println("PutObjectFromFile Error:", err)
-		return
+		return ""
 	}
+	return objectKey
+}
+
+func GetFileFromOss(src, dest, bucketName, prefix string, client *oss.Client) bool {
+
+	bucket, err := client.Bucket(bucketName)
+	if err != nil {
+		fmt.Println("Bucket Error:", err)
+		return false
+	}
+
+	objectKey := filepath.ToSlash(filepath.Join(prefix, src))
+	fmt.Println("objectKey:", objectKey)
+	err = bucket.GetObjectToFile(objectKey, dest)
+	if err != nil {
+		fmt.Println("GetObjectToFile Error:", err)
+		return false
+	}
+	return true
 }
