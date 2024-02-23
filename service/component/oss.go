@@ -1,4 +1,4 @@
-package service
+package component
 
 import (
 	"fmt"
@@ -41,8 +41,11 @@ func GetFileFromOss(src, dest, bucketName, prefix string, client *oss.Client) bo
 		fmt.Println("Bucket Error:", err)
 		return false
 	}
-
-	objectKey := filepath.ToSlash(filepath.Join(prefix, src))
+	slashPath := src
+	if prefix != "" {
+		slashPath = filepath.Join(prefix, src)
+	}
+	objectKey := filepath.ToSlash(slashPath)
 	fmt.Println("objectKey:", objectKey)
 	err = bucket.GetObjectToFile(objectKey, dest)
 	if err != nil {

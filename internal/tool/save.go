@@ -12,11 +12,16 @@ import (
 	"github.com/zaigie/palworld-server-tool/internal/database"
 	"github.com/zaigie/palworld-server-tool/internal/logger"
 	"github.com/zaigie/palworld-server-tool/internal/source"
+	"github.com/zaigie/palworld-server-tool/service/component"
 )
 
 type Sturcture struct {
 	Players []database.Player `json:"players"`
 	Guilds  []database.Guild  `json:"guilds"`
+}
+
+type fileResponse struct {
+	Path string `json:"path"`
 }
 
 func getSavCli() (string, error) {
@@ -39,7 +44,16 @@ func ConversionLoading(file string) error {
 	if strings.HasPrefix(file, "http://") || strings.HasPrefix(file, "https://") {
 		// http(s)://url
 		logger.Infof("downloading Level.sav from %s\n", file)
-		tmpFile, err = source.DownloadFromHttp(file)
+		useOss := viper.GetBool("save.use_oss")
+		if useOss {
+			fileRes := fileResponse{}
+			err = source.GetRequest(file, fileRes)
+			if err != nil {
+				tmpFile, err = useOssDownload(fileRes.Path)
+			}
+		} else {
+			tmpFile, err = source.DownloadFromHttp(file)
+		}
 		if err != nil {
 			return errors.New("error downloading file: " + err.Error())
 		}
@@ -99,4 +113,22 @@ func ConversionLoading(file string) error {
 	}
 
 	return nil
+}
+
+func useOssDownload(src string) (string, error) {
+	endpoint := viper.GetString("oss.endpoint")
+	accessKeyID := viper.GetString("oss.accessKeyID")
+	accessKeySecret := viper.GetString("oss.accessKeySecret")
+	bucketName := viper.GetString("oss.bucketName")
+	client, err := component.NewOssClient(endpoint, accessKeyID, accessKeySecret)
+	if err != nil {
+		return "", errors.New("init oss client error: " + err.Error())
+	}
+	tmpFile, err := os.CreateTemp("", "Level.sav")
+	destPath := tmpFile.Name()
+	getStatus := component.GetFileFromOss(src, destPath, bucketName, "", client)
+	if !getStatus {
+		return "", errors.New("get file error: " + err.Error())
+	}
+	return destPath, nil
 }

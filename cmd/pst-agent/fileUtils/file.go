@@ -9,7 +9,7 @@ import (
 	"sort"
 
 	"github.com/zaigie/palworld-server-tool/cmd/pst-agent/config"
-	"github.com/zaigie/palworld-server-tool/service"
+	"github.com/zaigie/palworld-server-tool/service/component"
 )
 
 func CopyFile(src, dst string) bool {
@@ -70,12 +70,12 @@ func UploadFileToOss(src string) string {
 		fmt.Println("not config")
 		return ""
 	}
-	client, err := service.NewOssClient(config.Endpoint, config.AccessKeyID, config.AccessKeySecret)
+	client, err := component.NewOssClient(config.Endpoint, config.AccessKeyID, config.AccessKeySecret)
 	if err != nil {
 		fmt.Println("NewOssClient error")
 		return ""
 	}
-	path := service.UploadFileToOss(src, config.BucketName, config.Prefix, client)
+	path := component.UploadFileToOss(src, config.BucketName, config.Prefix, client)
 	return path
 }
 
@@ -86,10 +86,10 @@ func GetFileFromOss(src, dest string) {
 		fmt.Println("not config")
 		return
 	}
-	client, err := service.NewOssClient(config.Endpoint, config.AccessKeyID, config.AccessKeySecret)
+	client, err := component.NewOssClient(config.Endpoint, config.AccessKeyID, config.AccessKeySecret)
 	if err != nil {
 		fmt.Println("NewOssClient error")
 		return
 	}
-	service.GetFileFromOss(src, dest, config.BucketName, config.Prefix, client)
+	component.GetFileFromOss(src, dest, config.BucketName, config.Prefix, client)
 }

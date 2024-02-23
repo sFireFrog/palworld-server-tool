@@ -1,6 +1,7 @@
 package source
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -25,4 +26,16 @@ func DownloadFromHttp(url string) (string, error) {
 	}
 
 	return tmpFile.Name(), nil
+}
+
+func GetRequest(url string, input any) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if err := json.NewDecoder(resp.Body).Decode(&input); err != nil {
+		return err
+	}
+	return nil
 }
