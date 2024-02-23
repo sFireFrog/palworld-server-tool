@@ -23,7 +23,7 @@ type Config struct {
 	} `mapstructure:"rcon"`
 	Save struct {
 		Path         string `mapstructure:"path"`
-		UseOss         bool `mapstructure:"use_oss"`
+		UseOss       bool   `mapstructure:"use_oss"`
 		DecodePath   string `mapstructure:"decode_path"`
 		SyncInterval int    `mapstructure:"sync_interval"`
 	} `mapstructure:"save"`
@@ -36,7 +36,7 @@ type Config struct {
 		AccessKeySecret string `mapstructure:"accessKeySecret"`
 		BucketName      string `mapstructure:"bucketName"`
 		Prefix          string `mapstructure:"prefix"`
-	}`mapstructure:"oss"`
+	} `mapstructure:"oss"`
 }
 
 func Init(cfgFile string, conf *Config) {
