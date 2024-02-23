@@ -47,8 +47,8 @@ func ConversionLoading(file string) error {
 		useOss := viper.GetBool("save.use_oss")
 		if useOss {
 			fileRes := fileResponse{}
-			err = source.GetRequest(file, fileRes)
-			if err != nil {
+			err = source.GetRequest(file, &fileRes)
+			if err == nil {
 				tmpFile, err = useOssDownload(fileRes.Path)
 			}
 		} else {

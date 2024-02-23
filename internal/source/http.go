@@ -34,7 +34,7 @@ func GetRequest(url string, input any) error {
 		return err
 	}
 	defer resp.Body.Close()
-	if err := json.NewDecoder(resp.Body).Decode(&input); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(input); err != nil {
 		return err
 	}
 	return nil
