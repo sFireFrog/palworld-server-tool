@@ -47,6 +47,9 @@ func GetFileFromOss(src, dest, bucketName, prefix string, client *oss.Client) bo
 	}
 	objectKey := filepath.ToSlash(slashPath)
 	fmt.Println("objectKey:", objectKey)
+	if objectKey == "" {
+		return false
+	}
 	err = bucket.GetObjectToFile(objectKey, dest)
 	if err != nil {
 		fmt.Println("GetObjectToFile Error:", err)
